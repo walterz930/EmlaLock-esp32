@@ -40,11 +40,13 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#f4f5f7">
 <title>EmlaLock</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--text:#151922;--muted:#69707d;--line:#e2e5ea;--accent:#222b3a;--danger:#b42318;--success:#18794e}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:680px;margin:0 auto;padding:28px 18px 50px}h1{font-size:24px;margin:0 0 24px;font-weight:650}h2{font-size:18px;margin:0 0 18px}h3{font-size:14px;margin:24px 0 10px;font-weight:650}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:12px 0}.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:13px}.label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}input,select,button{width:100%;font:inherit;border-radius:9px;padding:11px 12px}input,select{background:#fff;border:1px solid #cfd4dc;color:var(--text)}button{border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-weight:600}button.secondary{background:#fff;color:var(--text);border-color:#cfd4dc}button.danger{background:#fff;color:var(--danger);border-color:#e0b4b0}button:disabled{opacity:.55;cursor:wait}.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roles button{background:#fff;color:var(--text);border-color:#cfd4dc;padding:14px 8px}.roles button.selected{background:var(--accent);color:#fff;border-color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:8px}.row button{width:auto;min-width:88px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.statusline{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}.statusline:last-child{border-bottom:0}.statusValue{font-weight:600;text-align:right}.timeLabel{font-size:13px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}.time{font-size:34px;font-weight:650;letter-spacing:-1px;margin:5px 0 2px;font-variant-numeric:tabular-nums}.mode{font-size:13px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.notice{background:#f7f8fa;border:1px solid var(--line);border-radius:9px;padding:11px;margin-top:12px;font-size:13px}.success{color:var(--success)}.error{color:var(--danger)}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}.topline button{width:auto}.footerActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.loading{opacity:.65}
+:root{--bg:#f4f5f7;--card:#fff;--text:#151922;--muted:#69707d;--line:#e2e5ea;--accent:#222b3a;--danger:#b42318;--success:#18794e;--field:#fff;--fieldBorder:#cfd4dc;--notice:#f7f8fa}
+:root[data-theme="dark"]{--bg:#11151b;--card:#1a2029;--text:#f2f4f7;--muted:#a7afbd;--line:#303846;--accent:#dce3ee;--danger:#ff8f86;--success:#63d49a;--field:#151b23;--fieldBorder:#3b4555;--notice:#202733}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#11151b;--card:#1a2029;--text:#f2f4f7;--muted:#a7afbd;--line:#303846;--accent:#dce3ee;--danger:#ff8f86;--success:#63d49a;--field:#151b23;--fieldBorder:#3b4555;--notice:#202733}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:680px;margin:0 auto;padding:28px 18px 50px}h1{font-size:24px;margin:0 0 24px;font-weight:650}h2{font-size:18px;margin:0 0 18px}h3{font-size:14px;margin:24px 0 10px;font-weight:650}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:12px 0}.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:13px}.label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}input,select,button{width:100%;font:inherit;border-radius:9px;padding:11px 12px}input,select{background:var(--field);border:1px solid var(--fieldBorder);color:var(--text)}button{border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-weight:600}button.secondary{background:var(--field);color:var(--text);border-color:var(--fieldBorder)}button.danger{background:var(--field);color:var(--danger);border-color:#e0b4b0}button:disabled{opacity:.55;cursor:wait}.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roles button{background:var(--field);color:var(--text);border-color:var(--fieldBorder);padding:14px 8px}.roles button.selected{background:var(--accent);color:#fff;border-color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:8px}.row button{width:auto;min-width:88px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.statusline{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}.statusline:last-child{border-bottom:0}.statusValue{font-weight:600;text-align:right}.timeLabel{font-size:13px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}.time{font-size:34px;font-weight:650;letter-spacing:-1px;margin:5px 0 2px;font-variant-numeric:tabular-nums}.mode{font-size:13px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.notice{background:var(--notice);border:1px solid var(--line);border-radius:9px;padding:11px;margin-top:12px;font-size:13px}.success{color:var(--success)}.error{color:var(--danger)}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}.topline button{width:auto}.footerActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.loading{opacity:.65}
 @media(max-width:500px){main{padding:20px 12px 40px}.roles{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.footerActions{grid-template-columns:1fr}.time{font-size:30px}}
 </style>
 </head>
@@ -57,6 +59,13 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
   <button id="settingsBack" type="button" class="secondary hidden" onclick="backToDashboard()" style="margin-bottom:12px">Back</button>
   <div id="apInfo" class="notice hidden">Setup network is active. Connect to <b>EmlaLock-Setup</b> with password <b>EmlaLock-Setup</b>, then open <b>192.168.4.1</b>.</div>
   <p id="wifiInfo" class="muted small"></p>
+
+  <h3>Appearance</h3>
+  <select id="themeSelect" onchange="setTheme(this.value)">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+    <option value="system">System</option>
+  </select>
 
   <h3>Role</h3>
   <div class="roles">
@@ -149,6 +158,19 @@ let selectedRole='';
 let startTimeMs=0;
 let endTimeMs=0;
 const $=id=>document.getElementById(id);
+
+function applyTheme(theme){
+  const root=document.documentElement;
+  if(theme==='light'||theme==='dark')root.setAttribute('data-theme',theme);
+  else root.removeAttribute('data-theme');
+  localStorage.setItem('emlalock-theme',theme);
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=theme==='dark'?'#11151b':theme==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches?'#11151b':'#f4f5f7';
+  const select=$('themeSelect');
+  if(select)select.value=theme;
+}
+function setTheme(theme){applyTheme(theme)}
+function initTheme(){applyTheme(localStorage.getItem('emlalock-theme')||'system')}
 
 function chooseRole(role){
   if(window.roleLocked&&role!==selectedRole)return;
@@ -310,6 +332,7 @@ async function showSettings(){
     const x=await jsonFetch('/api/config');
     $('settingsBack').classList.remove('hidden');$('dash').classList.add('hidden');$('setup').classList.remove('hidden');$('apInfo').classList.toggle('hidden',!x.setupAP);selectedRole=x.role||'';window.savedRole=selectedRole;window.roleLocked=!!selectedRole;
     if(selectedRole)chooseRole(selectedRole);
+    initTheme();
     ['Wearer','Holder','Alone'].forEach(r=>$('role'+r).disabled=window.roleLocked);
     $('ssidManual').value=x.ssid||'';$('uid').value=x.userId||'';
   }catch(e){alert(e.message)}
@@ -368,6 +391,8 @@ async function startUpdate(){
     },4000);
   }catch(e){$('updateStatus').textContent=e.message;b.disabled=false;$('updateCheckBtn').disabled=false;}
 }
+initTheme();
+window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if((localStorage.getItem('emlalock-theme')||'system')==='system')initTheme()});
 window.addEventListener('load',load);
 setInterval(()=>{if(!$('dash').classList.contains('hidden'))renderTimeCounters()},1000);
 setInterval(()=>{if(!$('dash').classList.contains('hidden'))refresh()},30000);
