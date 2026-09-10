@@ -1,0 +1,55 @@
+name: Apply appearance modes
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/theme-patch.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply appearance modes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.cpp')
+          s=p.read_text()
+          s=s.replace('<meta name="theme-color" content="#111827">','<meta name="theme-color" content="#f4f5f7">',1)
+          old='''<style>\n:root{--bg:#f4f5f7;--card:#fff;--text:#151922;--muted:#69707d;--line:#e2e5ea;--accent:#222b3a;--danger:#b42318;--success:#18794e}'''
+          new='''<style>\n:root{--bg:#f4f5f7;--card:#fff;--text:#151922;--muted:#69707d;--line:#e2e5ea;--accent:#222b3a;--danger:#b42318;--success:#18794e;--field:#fff;--fieldBorder:#cfd4dc;--notice:#f7f8fa}\n:root[data-theme="dark"]{--bg:#11151b;--card:#1a2029;--text:#f2f4f7;--muted:#a7afbd;--line:#303846;--accent:#dce3ee;--danger:#ff8f86;--success:#63d49a;--field:#151b23;--fieldBorder:#3b4555;--notice:#202733}\n@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#11151b;--card:#1a2029;--text:#f2f4f7;--muted:#a7afbd;--line:#303846;--accent:#dce3ee;--danger:#ff8f86;--success:#63d49a;--field:#151b23;--fieldBorder:#3b4555;--notice:#202733}}'''
+          if old not in s: raise SystemExit('CSS marker not found')
+          s=s.replace(old,new,1)
+          s=s.replace('input,select{background:#fff;border:1px solid #cfd4dc;color:var(--text)}','input,select{background:var(--field);border:1px solid var(--fieldBorder);color:var(--text)}',1)
+          s=s.replace('button.secondary{background:#fff;color:var(--text);border-color:#cfd4dc}','button.secondary{background:var(--field);color:var(--text);border-color:var(--fieldBorder)}',1)
+          s=s.replace('button.danger{background:#fff;color:var(--danger);border-color:#e0b4b0}','button.danger{background:var(--field);color:var(--danger);border-color:#e0b4b0}',1)
+          s=s.replace('.roles button{background:#fff;color:var(--text);border-color:#cfd4dc;padding:14px 8px}', '.roles button{background:var(--field);color:var(--text);border-color:var(--fieldBorder);padding:14px 8px}',1)
+          s=s.replace('.notice{background:#f7f8fa;','.notice{background:var(--notice);',1)
+          marker='  <h3>Role</h3>'
+          insert='''  <h3>Appearance</h3>\n  <select id="themeSelect" onchange="setTheme(this.value)">\n    <option value="light">Light</option>\n    <option value="dark">Dark</option>\n    <option value="system">System</option>\n  </select>\n\n  <h3>Role</h3>'''
+          if marker not in s: raise SystemExit('Role marker not found')
+          s=s.replace(marker,insert,1)
+          marker='function chooseRole(role){'
+          insert='''function applyTheme(theme){\n  const root=document.documentElement;\n  if(theme==='light'||theme==='dark')root.setAttribute('data-theme',theme);\n  else root.removeAttribute('data-theme');\n  localStorage.setItem('emlalock-theme',theme);\n  const meta=document.querySelector('meta[name="theme-color"]');\n  if(meta)meta.content=theme==='dark'?'#11151b':theme==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches?'#11151b':'#f4f5f7';\n  const select=$('themeSelect');\n  if(select)select.value=theme;\n}\nfunction setTheme(theme){applyTheme(theme)}\nfunction initTheme(){applyTheme(localStorage.getItem('emlalock-theme')||'system')}\n\nfunction chooseRole(role){'''
+          if marker not in s: raise SystemExit('chooseRole marker not found')
+          s=s.replace(marker,insert,1)
+          marker='    if(selectedRole)chooseRole(selectedRole);'
+          replacement='    if(selectedRole)chooseRole(selectedRole);\n    initTheme();'
+          if marker not in s: raise SystemExit('settings marker not found')
+          s=s.replace(marker,replacement,1)
+          marker="window.addEventListener('load',load);"
+          replacement="initTheme();\nwindow.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if((localStorage.getItem('emlalock-theme')||'system')==='system')initTheme()});\nwindow.addEventListener('load',load);"
+          if marker not in s: raise SystemExit('load marker not found')
+          s=s.replace(marker,replacement,1)
+          p.write_text(s)
+          PY
+      - name: Commit appearance modes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/main.cpp .github/workflows/theme-patch.yml
+          git rm .github/workflows/theme-patch.yml
+          git commit -m "Add light dark and system appearance modes"
+          git push
