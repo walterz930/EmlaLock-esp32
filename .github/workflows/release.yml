@@ -1,12 +1,17 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/update_manager.h
   workflow_dispatch:
     inputs:
       version:
-        description: Release version, for example 1.0.4
-        required: true
-        default: 1.0.4
+        description: Release version (leave blank to use src/update_manager.h)
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -22,51 +27,88 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install PlatformIO
-        run: pip install platformio
-
-      - name: Set firmware version
+      - name: Determine version
+        id: version
         env:
-          VERSION: ${{ inputs.version }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           python - <<'PY'
           from pathlib import Path
           import os
+          import re
+          import subprocess
 
-          version = os.environ["VERSION"]
-          path = Path("src/update_manager.h")
-          text = path.read_text()
-          old = '#define EMLALOCK_VERSION "1.0.0"'
-          new = f'#define EMLALOCK_VERSION "{version}"'
-          if old not in text:
-              raise SystemExit("Expected EMLALOCK_VERSION definition was not found")
-          path.write_text(text.replace(old, new, 1))
+          requested = os.environ.get("INPUT_VERSION", "").strip()
+          text = Path("src/update_manager.h").read_text()
+          match = re.search(r'#define\s+EMLALOCK_VERSION\s+"([^"]+)"', text)
+          if not match:
+              raise SystemExit("EMLALOCK_VERSION definition was not found")
+
+          version = requested or match.group(1)
+          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+              raise SystemExit(f"Invalid release version: {version}")
+
+          latest = ""
+          try:
+              latest = subprocess.check_output(
+                  ["gh", "release", "view", "--json", "tagName", "-q", ".tagName"],
+                  text=True,
+                  stderr=subprocess.DEVNULL,
+              ).strip()
+          except subprocess.CalledProcessError:
+              pass
+
+          if latest == f"v{version}":
+              print(f"Release v{version} already exists; nothing to do.")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                  out.write("skip=true\n")
+                  out.write(f"version={version}\n")
+              raise SystemExit(0)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write("skip=false\n")
+              out.write(f"version={version}\n")
           PY
-
-      - name: Build ESP32
-        run: |
-          pio run -e esp32dev
-          cp .pio/build/esp32dev/firmware.bin "EmlaLock-${{ inputs.version }}-esp32.bin"
-
-      - name: Build ESP32-C3
-        run: |
-          pio run -e esp32-c3-devkitm-1
-          cp .pio/build/esp32-c3-devkitm-1/firmware.bin "EmlaLock-${{ inputs.version }}-esp32c3.bin"
-
-      - name: Build ESP32-S2
-        run: |
-          pio run -e esp32-s2-saola-1
-          cp .pio/build/esp32-s2-saola-1/firmware.bin "EmlaLock-${{ inputs.version }}-esp32s2.bin"
-
-      - name: Build ESP32-S3
-        run: |
-          pio run -e esp32-s3-devkitc-1
-          cp .pio/build/esp32-s3-devkitc-1/firmware.bin "EmlaLock-${{ inputs.version }}-esp32s3.bin"
-
-      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
+
+      - name: Stop if release already exists
+        if: steps.version.outputs.skip == 'true'
+        run: echo "Release already exists; skipping build."
+
+      - name: Install PlatformIO
+        if: steps.version.outputs.skip != 'true'
+        run: pip install platformio
+
+      - name: Build ESP32
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          pio run -e esp32dev
+          cp .pio/build/esp32dev/firmware.bin "EmlaLock-${{ steps.version.outputs.version }}-esp32.bin"
+
+      - name: Build ESP32-C3
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          pio run -e esp32-c3-devkitm-1
+          cp .pio/build/esp32-c3-devkitm-1/firmware.bin "EmlaLock-${{ steps.version.outputs.version }}-esp32c3.bin"
+
+      - name: Build ESP32-S2
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          pio run -e esp32-s2-saola-1
+          cp .pio/build/esp32-s2-saola-1/firmware.bin "EmlaLock-${{ steps.version.outputs.version }}-esp32s2.bin"
+
+      - name: Build ESP32-S3
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          pio run -e esp32-s3-devkitc-1
+          cp .pio/build/esp32-s3-devkitc-1/firmware.bin "EmlaLock-${{ steps.version.outputs.version }}-esp32s3.bin"
+
+      - name: Publish release
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "v${VERSION}" \
             "EmlaLock-${VERSION}-esp32.bin" \
