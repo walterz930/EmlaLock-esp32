@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - src/update_manager.h
+      - .github/workflows/release.yml
   workflow_dispatch:
     inputs:
       version:
@@ -31,6 +32,7 @@ jobs:
         id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -69,16 +71,32 @@ jobs:
               out.write("skip=false\n")
               out.write(f"version={version}\n")
           PY
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Stop if release already exists
-        if: steps.version.outputs.skip == 'true'
-        run: echo "Release already exists; skipping build."
 
       - name: Install PlatformIO
         if: steps.version.outputs.skip != 'true'
         run: pip install platformio
+
+      - name: Set firmware version
+        if: steps.version.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          version = os.environ["VERSION"]
+          path = Path("src/update_manager.h")
+          text = path.read_text()
+          import re
+          text = re.sub(
+              r'#define\s+EMLALOCK_VERSION\s+"[^"]+"',
+              f'#define EMLALOCK_VERSION "{version}"',
+              text,
+              count=1,
+          )
+          path.write_text(text)
+          PY
 
       - name: Build ESP32
         if: steps.version.outputs.skip != 'true'
