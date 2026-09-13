@@ -83,15 +83,18 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     <label class="label">Wi-Fi password</label>
     <input id="wpass" type="password" autocomplete="off" placeholder="Leave blank to keep saved password">
 
-    <h3>EmlaLock</h3>
-    <label class="label">Wearer User ID</label>
-    <input id="uid" autocomplete="off">
-    <label class="label">Wearer API key</label>
-    <input id="akey" type="password" autocomplete="off" placeholder="Leave blank to keep saved API key">
-    <div id="holderField" class="hidden">
-      <label class="label">Key Holder API key</label>
-      <input id="hkey" type="password" autocomplete="off" placeholder="Leave blank to keep saved holder key">
+    <div id="keyFields">
+      <h3>EmlaLock</h3>
+      <label class="label">Wearer User ID</label>
+      <input id="uid" autocomplete="off">
+      <label class="label">Wearer API key</label>
+      <input id="akey" type="password" autocomplete="off" placeholder="Enter API key">
+      <div id="holderField" class="hidden">
+        <label class="label">Key Holder API key</label>
+        <input id="hkey" type="password" autocomplete="off" placeholder="Enter holder API key">
+      </div>
     </div>
+    <div id="keyLockedNotice" class="notice hidden">API keys are configured and locked. They are never shown here. Use <b>Clear credentials</b> to erase them before entering new API keys.</div>
     <button type="button" onclick="saveConfig()" id="saveBtn" style="margin-top:18px">Save and Connect</button>
     <div id="setupMsg" class="notice hidden"></div>
   </div>
@@ -247,14 +250,15 @@ async function load(){
   try{
     const x=await jsonFetch('/api/status');
     if(!x.configured){
-      window.roleLocked=false;window.savedRole='';
+      window.roleLocked=false;window.savedRole='';window.credentialsLocked=false;
       ['Wearer','Holder','Alone'].forEach(r=>$('role'+r).disabled=false);
+      $('keyFields').classList.remove('hidden');$('keyLockedNotice').classList.add('hidden');
       startTimeMs=0;
       endTimeMs=0;
-        $('settingsBack').classList.add('hidden');
+      $('settingsBack').classList.add('hidden');
       $('setup').classList.remove('hidden');$('dash').classList.add('hidden');$('apInfo').classList.toggle('hidden',!x.setupAP);$('wifiInfo').textContent=x.setupAP?'Setup access point is active.':(x.ssid?'Saved Wi-Fi: '+x.ssid:'Enter your Wi-Fi and EmlaLock credentials.');$('ssidManual').value=x.ssid||'';return;
     }
-    $('settingsBack').classList.add('hidden');$('setup').classList.add('hidden');$('dash').classList.remove('hidden');window.savedRole=x.role||'';window.roleLocked=!!window.savedRole;setMode(x.role);refresh();
+    $('settingsBack').classList.add('hidden');$('setup').classList.add('hidden');$('dash').classList.remove('hidden');window.savedRole=x.role||'';window.roleLocked=!!window.savedRole;window.credentialsLocked=true;setMode(x.role);refresh();
   }catch(e){
     startTimeMs=0;
     endTimeMs=0;
@@ -330,10 +334,11 @@ function backToDashboard(){
 async function showSettings(){
   try{
     const x=await jsonFetch('/api/config');
-    $('settingsBack').classList.remove('hidden');$('dash').classList.add('hidden');$('setup').classList.remove('hidden');$('apInfo').classList.toggle('hidden',!x.setupAP);selectedRole=x.role||'';window.savedRole=selectedRole;window.roleLocked=!!selectedRole;
+    $('settingsBack').classList.remove('hidden');$('dash').classList.add('hidden');$('setup').classList.remove('hidden');$('apInfo').classList.toggle('hidden',!x.setupAP);selectedRole=x.role||'';window.savedRole=selectedRole;window.roleLocked=!!selectedRole;window.credentialsLocked=!!x.configured;
     if(selectedRole)chooseRole(selectedRole);
     initTheme();
     ['Wearer','Holder','Alone'].forEach(r=>$('role'+r).disabled=window.roleLocked);
+    $('keyFields').classList.toggle('hidden',window.credentialsLocked);$('keyLockedNotice').classList.toggle('hidden',!window.credentialsLocked);
     $('ssidManual').value=x.ssid||'';$('uid').value=x.userId||'';
   }catch(e){alert(e.message)}
 }
@@ -471,6 +476,8 @@ void handleConfigPost(){
   String role=d["role"]|"";String ssid=d["ssid"]|"";String pass=d["wifiPass"]|"";String uid=d["userId"]|"";String key=d["apiKey"]|"";String hkey=d["holderApiKey"]|"";
   if(role!="wearer"&&role!="holder"&&role!="alone"){server.send(400,"application/json",R"({"ok":false,"error":"Invalid role"})");return;}
   if(cfg.role.length()&&role!=cfg.role){server.send(409,"application/json",R"({\"ok\":false,\"error\":"Role is locked. Use Clear credentials before changing role."})");return;}
+  if(cfg.apiKey.length()&&key.length()){server.send(409,"application/json",R"({"ok":false,"error":"Wearer API key is locked. Use Clear credentials before changing it."})");return;}
+  if(cfg.holderApiKey.length()&&hkey.length()){server.send(409,"application/json",R"({"ok":false,"error":"Key Holder API key is locked. Use Clear credentials before changing it."})");return;}
   if(!ssid.length())ssid=cfg.wifiSsid;if(!ssid.length()){server.send(400,"application/json",R"({"ok":false,"error":"Wi-Fi SSID is required"})");return;}
   if(!uid.length()||(!key.length()&&!cfg.apiKey.length())){server.send(400,"application/json",R"({"ok":false,"error":"Wearer User ID and API key are required"})");return;}
   if(role=="holder"&&!hkey.length()&&!cfg.holderApiKey.length()){server.send(400,"application/json",R"({"ok":false,"error":"Holder API key is required for Key Holder mode"})");return;}
